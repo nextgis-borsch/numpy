@@ -40,6 +40,69 @@ set(VERSION ${NP_MAJOR_VERSION}.${NP_MINOR_VERSION}.${NP_MICRO_VERSION})
 report_version(${PROJECT_NAME} ${VERSION})
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake IMMEDIATE @ONLY)
+
+if(NOT WITH_PYTHON2 AND NOT WITH_PYTHON3)
+    set(WITH_PYTHON2 ON)
+endif()
+
+if(WITH_PYTHON2)
+    find_package(PythonInterp 2)
+    if(PYTHONINTERP_FOUND)
+        set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
+        set(PYTHON2_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
+        set(PYTHON2_VERSION_MINOR ${PYTHON_VERSION_MINOR})
+    else()
+        message(WARNING "Cannot find python 2")
+    endif()
+endif()
+
+unset(PYTHONINTERP_FOUND)
+unset(PYTHON_EXECUTABLE)
+unset(PYTHON_VERSION_MAJOR)
+unset(PYTHON_VERSION_MINOR)
+
+if(WITH_PYTHON3)
+    # Hack, not find python3 withouut this
+    find_program(PYTHON3_EXECUTABLE python3)
+    set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
+
+    find_package(PythonInterp 3)
+    if(PYTHONINTERP_FOUND)
+        set(PYTHON3_EXECUTABLE ${PYTHON_EXECUTABLE})
+        set(PYTHON3_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
+        set(PYTHON3_VERSION_MINOR ${PYTHON_VERSION_MINOR})
+    else()
+        message(WARNING "Cannot find python 3")
+    endif()
+endif()
+
+if(NOT PYTHON2_EXECUTABLE AND NOT PYTHON3_EXECUTABLE)
+    message(FATAL_ERROR "Cannot find python")
+endif()
+
+include(ProcessorCount)
+ProcessorCount(N)
+if(NOT N EQUAL 0)
+    set(BUILD_FLAGS "-j ${N}")
+else()
+    set(BUILD_FLAGS)
+endif()
+
+macro(build_py ver)
+    add_custom_target(build_py${ver} ALL
+        COMMAND ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build_ext --inplace ${BUILD_FLAGS} -b ${CMAKE_CURRENT_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endmacro()
+
+if(PYTHON2_EXECUTABLE)
+    build_py(2)
+endif()
+
+if(PYTHON3_EXECUTABLE)
+    build_py(3)
+endif()
+
 add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 

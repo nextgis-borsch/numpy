@@ -34,15 +34,15 @@ function(check_version major minor micro)
 
     file(READ ${VER_FILE} NP_VERSION_CONTENTS)
 
-    string(REGEX MATCH "MAJOR[ \t]=+([0-9]+)"
+    string(REGEX MATCH "MAJOR[ \t]+= ([0-9]+)"
       NP_MAJOR_VERSION ${NP_VERSION_CONTENTS})
     string (REGEX MATCH "([0-9]+)"
       NP_MAJOR_VERSION ${NP_MAJOR_VERSION})
-    string(REGEX MATCH "MINOR[ \t]=+([0-9]+)"
+    string(REGEX MATCH "MINOR[ \t]+= ([0-9]+)"
       NP_MINOR_VERSION ${NP_VERSION_CONTENTS})
     string (REGEX MATCH "([0-9]+)"
       NP_MINOR_VERSION ${NP_MINOR_VERSION})
-    string(REGEX MATCH "MICRO[ \t]=+([0-9]+)"
+    string(REGEX MATCH "MICRO[ \t]+= ([0-9]+)"
       NP_MICRO_VERSION ${NP_VERSION_CONTENTS})
     string (REGEX MATCH "([0-9]+)"
       NP_MICRO_VERSION ${NP_MICRO_VERSION})
