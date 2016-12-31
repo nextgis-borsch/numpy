@@ -90,7 +90,7 @@ endif()
 
 macro(build_py ver)
     add_custom_target(build_py${ver} ALL
-        COMMAND ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build_ext --inplace ${BUILD_FLAGS} -b ${CMAKE_CURRENT_BINARY_DIR}
+        COMMAND ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build ${BUILD_FLAGS} -b ${CMAKE_CURRENT_BINARY_DIR}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
 endmacro()
