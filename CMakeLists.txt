@@ -124,6 +124,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         install(DIRECTORY "${BINDING_PATH}/"
                 DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages
                 COMPONENT libraries)
+        install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
+                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
+                PATTERN *.h)
     endmacro()
 
     if(PYTHON2_EXECUTABLE)
@@ -176,6 +179,9 @@ except ImportError:
                 COMMAND ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/setup.py install ${SETUP_OPTS}
                 WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}
                 )")
+        install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
+                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
+                PATTERN *.h)
     endmacro()
 
     if(PYTHON2_EXECUTABLE)
@@ -191,6 +197,9 @@ else()
         install(DIRECTORY "${BINDING_PATH}/"
                 DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages
                 COMPONENT libraries)
+        install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
+                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
+                PATTERN *.h)
     endmacro()
 
     if(PYTHON2_EXECUTABLE)
