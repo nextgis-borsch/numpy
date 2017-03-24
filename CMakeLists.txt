@@ -53,13 +53,27 @@ if(NOT WITH_PYTHON2 AND NOT WITH_PYTHON3)
 endif()
 
 if(WITH_PYTHON2)
-    find_package(PythonInterp 2)
-    if(PYTHONINTERP_FOUND)
-        set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
-        set(PYTHON2_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
-        set(PYTHON2_VERSION_MINOR ${PYTHON_VERSION_MINOR})
+    if(WIN32)
+        include(FindAnyProject)
+        find_anyproject(python2 REQUIRED)
+        
+        if (NOT PYTHON2_FOUND)
+            find_package(PythonInterp 2)
+            if(PYTHONINTERP_FOUND)
+                set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
+            else()
+                message(WARNING "Cannot find python 2")
+            endif()
+        endif()
     else()
-        message(WARNING "Cannot find python 2")
+        find_package(PythonInterp 2)
+        if(PYTHONINTERP_FOUND)
+            set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
+            set(PYTHON2_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
+            set(PYTHON2_VERSION_MINOR ${PYTHON_VERSION_MINOR})
+        else()
+            message(WARNING "Cannot find python 2")
+        endif()
     endif()
 endif()
 
@@ -95,11 +109,26 @@ else()
     set(BUILD_FLAGS)
 endif()
 
+if(WIN32)
+    string(REPLACE "\\"
+       "\\\\" VS120COMNTOOLS
+       $ENV{VS120COMNTOOLS})
+    set(FLAGS ${FLAGS} "VS90COMNTOOLS=${VS120COMNTOOLS}")
+endif()
+
 macro(build_py ver)
-    add_custom_target(build_py${ver} ALL
-        COMMAND ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build ${BUILD_FLAGS} -b ${CMAKE_CURRENT_BINARY_DIR}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    )
+    if(WIN32)
+        add_custom_target(build_py${ver} ALL
+            COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
+            ${PYTHON${ver}_EXECUTABLE} setup.py build
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
+    else()
+        add_custom_target(build_py${ver} ALL
+            ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build ${BUILD_FLAGS} -b ${CMAKE_CURRENT_BINARY_DIR}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
 endmacro()
 
 if(PYTHON2_EXECUTABLE)
@@ -193,12 +222,13 @@ except ImportError:
     endif()
 else()
     macro(install_win_py ver)
-        set(BINDING_PATH ${CMAKE_CURRENT_BINARY_DIR}/build/lib.${PY_PLATFORM_NAME}-${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR})
+        execute_process ( COMMAND ${PYTHON${ver}_EXECUTABLE} -c "import distutils.util; print(distutils.util.get_platform())" OUTPUT_VARIABLE PY_PLATFORM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(BINDING_PATH ${CMAKE_SOURCE_DIR}/build/lib.${PY_PLATFORM_NAME}-${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR})
         install(DIRECTORY "${BINDING_PATH}/"
                 DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages
                 COMPONENT libraries)
         install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
-                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
+                DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
                 PATTERN *.h)
     endmacro()
 
