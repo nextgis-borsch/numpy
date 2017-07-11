@@ -116,7 +116,9 @@ if(WIN32)
     set(FLAGS ${FLAGS} "VS90COMNTOOLS=${VS120COMNTOOLS}")
 endif()
 
+set(TARGET_NAME)
 macro(build_py ver)
+    set(TARGET_NAME build_py${ver})
     if(WIN32)
         add_custom_target(build_py${ver} ALL
             COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
@@ -227,9 +229,32 @@ else()
         install(DIRECTORY "${BINDING_PATH}/"
                 DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages
                 COMPONENT libraries)
+        set(BINDING_SRC_PATH ${CMAKE_SOURCE_DIR}/build/src.${PY_PLATFORM_NAME}-${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR})
+        install(DIRECTORY "${BINDING_SRC_PATH}/numpy/core/include/numpy"
+                DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
+                PATTERN *.h)
         install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
                 DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
                 PATTERN *.h)
+        
+        if (REGISTER_PACKAGE)
+            #export(TARGETS ${TARGET_NAME} FILE numpy-exports.cmake)
+
+            set(EXPORT_PACKAGE_NAME numpy)
+            set(EXPORT_PACKAGE_NAME_UPPER NUMPY)
+            set(PACKAGE_PATH "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages")
+            export(PACKAGE ${EXPORT_PACKAGE_NAME})
+
+            include(CMakePackageConfigHelpers)
+            configure_package_config_file(
+                ${CMAKE_SOURCE_DIR}/cmake/PackageConfig.cmake.in
+                ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_PACKAGE_NAME}Config.cmake
+            INSTALL_DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+            write_basic_package_version_file(
+                ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_PACKAGE_NAME}ConfigVersion.cmake
+                VERSION ${VERSION}
+                COMPATIBILITY AnyNewerVersion )
+        endif()
     endmacro()
 
     if(PYTHON2_EXECUTABLE)
