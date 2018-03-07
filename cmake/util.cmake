@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -23,39 +23,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-
-
-function(check_version major minor micro)
-
-    # parse the version number from gdal_version.h and include in
-    # major, minor and rev parameters
-
-    set(VER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/setup.py)
-
-    file(READ ${VER_FILE} NP_VERSION_CONTENTS)
-
-    string(REGEX MATCH "MAJOR[ \t]+= ([0-9]+)"
-      NP_MAJOR_VERSION ${NP_VERSION_CONTENTS})
-    string (REGEX MATCH "([0-9]+)"
-      NP_MAJOR_VERSION ${NP_MAJOR_VERSION})
-    string(REGEX MATCH "MINOR[ \t]+= ([0-9]+)"
-      NP_MINOR_VERSION ${NP_VERSION_CONTENTS})
-    string (REGEX MATCH "([0-9]+)"
-      NP_MINOR_VERSION ${NP_MINOR_VERSION})
-    string(REGEX MATCH "MICRO[ \t]+= ([0-9]+)"
-      NP_MICRO_VERSION ${NP_VERSION_CONTENTS})
-    string (REGEX MATCH "([0-9]+)"
-      NP_MICRO_VERSION ${NP_MICRO_VERSION})
-
-    set(${major} ${NP_MAJOR_VERSION} PARENT_SCOPE)
-    set(${minor} ${NP_MINOR_VERSION} PARENT_SCOPE)
-    set(${micro} ${NP_MICRO_VERSION} PARENT_SCOPE)
-
-    # Store version string in file for installer needs
-    file(TIMESTAMP ${VER_FILE} VERSION_DATETIME "%Y-%m-%d %H:%M:%S" UTC)
-    file(WRITE ${CMAKE_BINARY_DIR}/version.str "${NP_MAJOR_VERSION}.${NP_MINOR_VERSION}.${NP_MICRO_VERSION}\n${VERSION_DATETIME}")
-
-endfunction(check_version)
 
 # search python module
 function(find_python_module module)
@@ -91,7 +58,17 @@ function(report_version name ver)
     set(BoldYellow  "${Esc}[1;33m")
     set(ColourReset "${Esc}[m")
 
-    message(STATUS "${BoldYellow}${name} version ${ver}${ColourReset}")
+    message("${BoldYellow}${name} version ${ver}${ColourReset}")
+
+endfunction()
+
+function(status_message text)
+
+    string(ASCII 27 Esc)
+    set(BoldGreen   "${Esc}[1;32m")
+    set(ColourReset "${Esc}[m")
+
+    message(STATUS "${BoldGreen}${text}${ColourReset}")
 
 endfunction()
 
@@ -103,4 +80,25 @@ function(warning_msg text)
 
     message(STATUS "${Red}${text}${ColourReset}")
     endif()
+endfunction()
+
+function(get_compiler_version ver)
+    ## Limit compiler version to 2 or 1 digits
+    string(REPLACE "." ";" VERSION_LIST ${CMAKE_C_COMPILER_VERSION})
+    list(LENGTH VERSION_LIST VERSION_LIST_LEN)
+    if(VERSION_LIST_LEN GREATER 2 OR VERSION_LIST_LEN EQUAL 2)
+        list(GET VERSION_LIST 0 COMPILER_VERSION_MAJOR)
+        list(GET VERSION_LIST 1 COMPILER_VERSION_MINOR)
+        set(COMPILER ${CMAKE_C_COMPILER_ID}-${COMPILER_VERSION_MAJOR}.${COMPILER_VERSION_MINOR})
+    else()
+        set(COMPILER ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION})
+    endif()
+
+    if(WIN32)
+        if(CMAKE_CL_64)
+            set(COMPILER "${COMPILER}-64bit")
+        endif()
+    endif()
+
+    set(${ver} ${COMPILER} PARENT_SCOPE)
 endfunction()

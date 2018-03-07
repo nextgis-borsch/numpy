@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, dmitry.baryshnikov@nexgis.com
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -28,52 +28,37 @@ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
 project(numpy)
 
+if(NOT DEFINED PACKAGE_VENDOR)
+    set(PACKAGE_VENDOR NextGIS)
+endif()
+
+if(NOT DEFINED PACKAGE_BUGREPORT)
+    set(PACKAGE_BUGREPORT info@nextgis.com)
+endif()
+
 # some init settings
 set(CMAKE_COLOR_MAKEFILE ON)
 # set path to additional CMake modules
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 if(OSX_FRAMEWORK)
-  set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/Library" CACHE INTERNAL "Installation directory for libraries" FORCE)
+  set(INSTALL_LIB_DIR "Library" CACHE INTERNAL "Installation directory for libraries" FORCE)
 else()
-    include(GNUInstallDirs)
-    set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "Installation directory for libraries" FORCE)
+    set(INSTALL_LIB_DIR "." CACHE INTERNAL "Installation directory for libraries" FORCE)
 endif()
-
-include(util)
-check_version(NP_MAJOR_VERSION NP_MINOR_VERSION NP_MICRO_VERSION)
-set(VERSION ${NP_MAJOR_VERSION}.${NP_MINOR_VERSION}.${NP_MICRO_VERSION})
-
-report_version(${PROJECT_NAME} ${VERSION})
-
-configure_file(${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake IMMEDIATE @ONLY)
 
 if(NOT WITH_PYTHON2 AND NOT WITH_PYTHON3)
     set(WITH_PYTHON2 ON)
 endif()
 
 if(WITH_PYTHON2)
-    if(WIN32)
-        include(FindAnyProject)
-        find_anyproject(python2 REQUIRED)
-        
-        if (NOT PYTHON2_FOUND)
-            find_package(PythonInterp 2)
-            if(PYTHONINTERP_FOUND)
-                set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
-            else()
-                message(WARNING "Cannot find python 2")
-            endif()
-        endif()
+    find_package(PythonInterp 2)
+    if(PYTHONINTERP_FOUND)
+        set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
+        set(PYTHON2_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
+        set(PYTHON2_VERSION_MINOR ${PYTHON_VERSION_MINOR})
     else()
-        find_package(PythonInterp 2)
-        if(PYTHONINTERP_FOUND)
-            set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
-            set(PYTHON2_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
-            set(PYTHON2_VERSION_MINOR ${PYTHON_VERSION_MINOR})
-        else()
-            message(WARNING "Cannot find python 2")
-        endif()
+        message(WARNING "Cannot find python 2")
     endif()
 endif()
 
@@ -101,72 +86,87 @@ if(NOT PYTHON2_EXECUTABLE AND NOT PYTHON3_EXECUTABLE)
     message(FATAL_ERROR "Cannot find python")
 endif()
 
-include(ProcessorCount)
-ProcessorCount(N)
-if(NOT N EQUAL 0)
-    set(BUILD_FLAGS "-j ${N}")
+if(PYTHON2_EXECUTABLE)
+    set(PYTHON_EXECUTABLE ${PYTHON2_EXECUTABLE})
 else()
-    set(BUILD_FLAGS)
+    set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
 endif()
 
-if(WIN32)
-    string(REPLACE "\\"
-       "\\\\" VS120COMNTOOLS
-       $ENV{VS120COMNTOOLS})
-    set(FLAGS ${FLAGS} "VS90COMNTOOLS=${VS120COMNTOOLS}")
+file(DOWNLOAD "https://pypi.python.org/pypi/${PROJECT_NAME}/json" "${CMAKE_CURRENT_BINARY_DIR}/meta.json")
+
+include(util)
+get_compiler_version(COMPILER)
+# get version and download url
+execute_process(COMMAND ${PYTHON_EXECUTABLE}
+    ${CMAKE_SOURCE_DIR}/cmake/pypi_process.py ${PLUGIN} ${CMAKE_CURRENT_BINARY_DIR}/meta.json ${COMPILER}
+    OUTPUT_VARIABLE PACKAGE_DETAILS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+list(GET PACKAGE_DETAILS 0 DOWNLOAD_URL)
+list(GET PACKAGE_DETAILS 1 VERSION)
+list(GET PACKAGE_DETAILS 2 PROJECT_CPACK_FILENAME)
+
+report_version(${PROJECT_NAME} ${VERSION})
+
+if(OSX_FRAMEWORK)
+    set(FLAGS "ARCHFLAGS=-arch x86_64")
+elseif(WIN32)
+    if(MSVC_VERSION EQUAL 1400)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=$ENV{VS80COMNTOOLS}")
+    elseif(MSVC_VERSION EQUAL 1500)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=$ENV{VS90COMNTOOLS}")
+    elseif(MSVC_VERSION EQUAL 1600)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=$ENV{VS100COMNTOOLS}")
+    elseif(MSVC_VERSION EQUAL 1700)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=$ENV{VS110COMNTOOLS}")
+    elseif(MSVC_VERSION EQUAL 1800)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=$ENV{VS120COMNTOOLS}")
+    elseif(MSVC_VERSION EQUAL 1900)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=$ENV{VS140COMNTOOLS}")
+    else() # 1912 - Need to copy vcvarsall.bat from VC\Auxiliary\Build to VC
+        get_filename_component(_COMNTOOLS_PREFIX "${CMAKE_C_COMPILER}" PATH)
+        get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
+        get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
+        get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
+        get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
+        get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
+        # get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
+        set(FLAGS ${FLAGS} "VS90COMNTOOLS=${_COMNTOOLS_PREFIX}")
+    endif()
+endif()
+
+# Download tarbal
+set(OUT_DIR_NAME ${PROJECT_NAME}-${VERSION})
+set(OUT_NAME "${OUT_DIR_NAME}.tar.gz")
+
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME}")
+    status_message("Download ${DOWNLOAD_URL}")
+    file(DOWNLOAD "${DOWNLOAD_URL}" "${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME}"
+        SHOW_PROGRESS
+    )
+endif()
+
+# Extract archive
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME})
+    status_message("Extract ${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME})
 endif()
 
 macro(build_py ver)
-    if(WIN32)
-        add_custom_target(build_py${ver} ALL
-            COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
-            ${PYTHON${ver}_EXECUTABLE} setup.py build
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        )
+    add_custom_target(build_py${ver} ALL
+        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
+        ${PYTHON${ver}_EXECUTABLE} setup.py build_ext ${BUILD_INCLUDES}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+        VERBATIM
+    )
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+        set(SETUP_OPTS ${SETUP_OPTS} --no-compile --single-version-externally-managed --record=rekord.txt --prefix=${CMAKE_CURRENT_BINARY_DIR}/inst_tmp)
+    elseif(WIN32)
+        string(REPLACE "/" "\\\\" TMP_PATH "${CMAKE_CURRENT_BINARY_DIR}/inst_tmp")
+        set(SETUP_OPTS ${SETUP_OPTS} --no-compile --single-version-externally-managed --record=rekord.txt --prefix=${TMP_PATH})
     else()
-        add_custom_target(build_py${ver} ALL
-            ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/setup.py build ${BUILD_FLAGS} -b ${CMAKE_CURRENT_BINARY_DIR}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        )
-    endif()
-endmacro()
-
-if(PYTHON2_EXECUTABLE)
-    build_py(2)
-endif()
-
-if(PYTHON3_EXECUTABLE)
-    build_py(3)
-endif()
-
-if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    macro(install_mac_py ver)
-        execute_process ( COMMAND ${PYTHON${ver}_EXECUTABLE} -c "import distutils.util; print(distutils.util.get_platform())" OUTPUT_VARIABLE PY_PLATFORM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-        set(BINDING_PATH ${CMAKE_CURRENT_BINARY_DIR}/src.${PY_PLATFORM_NAME}-${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR})
-        install(DIRECTORY "${BINDING_PATH}/"
-                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages
-                COMPONENT libraries)
-
-        set(BINDING_PATH ${CMAKE_CURRENT_BINARY_DIR}/lib.${PY_PLATFORM_NAME}-${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR})
-        install(DIRECTORY "${BINDING_PATH}/"
-                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages
-                COMPONENT libraries)
-        install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
-                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
-                PATTERN *.h)
-    endmacro()
-
-    if(PYTHON2_EXECUTABLE)
-        install_mac_py(2)
-    endif()
-
-    if(PYTHON3_EXECUTABLE)
-        install_mac_py(3)
-    endif()
-elseif(UNIX)
-    macro(install_py ver)
         execute_process ( COMMAND ${PYTHON${ver}_EXECUTABLE} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())" OUTPUT_VARIABLE PY_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
 
         set(TEST_CMD "try:
@@ -176,11 +176,8 @@ except ImportError:
     pass")
 
         execute_process ( COMMAND ${PYTHON${ver}_EXECUTABLE} -c ${TEST_CMD} OUTPUT_VARIABLE PY_HAVE_SETUPTOOLS OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-        set(SETUP_OPTS)
-
         if(PY_HAVE_SETUPTOOLS)
-            set(SETUP_OPTS "${SETUP_OPTS} --single-version-externally-managed --record=rekord.txt")
+            set(SETUP_OPTS "${SETUP_OPTS} --no-compile --single-version-externally-managed --record=rekord.txt")
         endif()
 
         string( LENGTH "$ENV{DESTDIR}" DESTDIRLEN )
@@ -198,48 +195,44 @@ except ImportError:
 
         # TODO: do we need --install-lib=$(PYTHON_INSTALL_LIB) ?
 
-        set(SETUP_OPTS "${SETUP_OPTS} --prefix=${CMAKE_INSTALL_PREFIX}")
+        set(SETUP_OPTS "${SETUP_OPTS} --prefix=${CMAKE_CURRENT_BINARY_DIR}/inst_tmp")
 
-        if(NOT SUPPRESS_VERBOSE_OUTPUT)
-            message(STATUS "setup tools options: ${SETUP_OPTS}")
-        endif()
-
-        install(CODE "execute_process(
-                COMMAND ${PYTHON${ver}_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/setup.py install ${SETUP_OPTS}
-                WORKING_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}
-                )")
-        install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
-                DESTINATION ${INSTALL_LIB_DIR}/Python/${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
-                PATTERN *.h)
-    endmacro()
-
-    if(PYTHON2_EXECUTABLE)
-        install_py(2)
     endif()
+    add_custom_target(install_py${ver} ALL
+        COMMAND ${CMAKE_COMMAND} -E env "${FLAGS}"
+        ${PYTHON${ver}_EXECUTABLE} setup.py install ${SETUP_OPTS}
+        DEPENDS build_py${ver}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}
+        VERBATIM
+    )
+endmacro()
 
-    if(PYTHON3_EXECUTABLE)
-        install_py(3)
-    endif()
-else()
-    macro(install_win_py ver)
-        execute_process ( COMMAND ${PYTHON${ver}_EXECUTABLE} -c "import distutils.util; print(distutils.util.get_platform())" OUTPUT_VARIABLE PY_PLATFORM_NAME OUTPUT_STRIP_TRAILING_WHITESPACE)
-        set(BINDING_PATH ${CMAKE_SOURCE_DIR}/build/lib.${PY_PLATFORM_NAME}-${PYTHON${ver}_VERSION_MAJOR}.${PYTHON${ver}_VERSION_MINOR})
-        install(DIRECTORY "${BINDING_PATH}/"
-                DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages
-                COMPONENT libraries)
-        install(DIRECTORY "${CMAKE_SOURCE_DIR}/numpy/core/include/numpy"
-                DESTINATION ${INSTALL_LIB_DIR}/Python${PYTHON${ver}_VERSION_MAJOR}${PYTHON${ver}_VERSION_MINOR}/site-packages/numpy/core/include/
-                PATTERN *.h)
-    endmacro()
-
-    if(PYTHON2_EXECUTABLE)
-        install_win_py(2)
-    endif()
-
-    if(PYTHON3_EXECUTABLE)
-        install_win_py(3)
-    endif()
-endif()
+if(PYTHON2_EXECUTABLE)
+    build_py(2)
 endif()
 
-add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+if(PYTHON3_EXECUTABLE)
+    build_py(3)
+endif()
+
+if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/inst_tmp/ DESTINATION ${INSTALL_LIB_DIR})
+endif()
+
+# Archiving ====================================================================
+set(PACKAGE_NAME ${PROJECT_NAME})
+
+set(CPACK_PACKAGE_NAME "${PACKAGE_NAME}")
+set(CPACK_PACKAGE_VENDOR "${PACKAGE_VENDOR}")
+set(CPACK_PACKAGE_VERSION "${VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PACKAGE_NAME} Installation")
+set(CPACK_PACKAGE_RELOCATABLE TRUE)
+set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+set(CPACK_GENERATOR "ZIP")
+set(CPACK_MONOLITHIC_INSTALL ON)
+set(CPACK_STRIP_FILES TRUE)
+
+# Get cpack zip archive name
+set(CPACK_PACKAGE_FILE_NAME ${PROJECT_CPACK_FILENAME})
+
+include(CPack)
