@@ -207,6 +207,7 @@ except ImportError:
     )
 endmacro()
 
+
 if(PYTHON2_EXECUTABLE)
     build_py(2)
 endif()
