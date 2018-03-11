@@ -42,10 +42,13 @@ set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 if(OSX_FRAMEWORK)
-  set(INSTALL_LIB_DIR "Library" CACHE INTERNAL "Installation directory for libraries" FORCE)
+    set(INSTALL_LIB_DIR "Library" CACHE INTERNAL "Installation directory for libraries" FORCE)
+    set(NUMPY_HEADERS ${INSTALL_LIB_DIR}/lib/python2.7/site-packages/numpy/core/include)
 else()
     set(INSTALL_LIB_DIR "." CACHE INTERNAL "Installation directory for libraries" FORCE)
+    set(NUMPY_HEADERS ${INSTALL_LIB_DIR}/Lib/site-packages/numpy/core/include)
 endif()
+set(INSTALL_CMAKECONF_DIR CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 
 if(NOT WITH_PYTHON2 AND NOT WITH_PYTHON3)
     set(WITH_PYTHON2 ON)
@@ -134,6 +137,8 @@ elseif(WIN32)
         # get_filename_component(_COMNTOOLS_PREFIX "${_COMNTOOLS_PREFIX}" PATH)
         set(FLAGS ${FLAGS} "VS90COMNTOOLS=${_COMNTOOLS_PREFIX}")
     endif()
+else()
+    set(FLAGS "NextGIS=TRUE")
 endif()
 
 set(BUILD_INCLUDES ${BUILD_INCLUDES} -q)
@@ -225,8 +230,19 @@ if(PYTHON3_EXECUTABLE)
     build_py(3)
 endif()
 
-if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
+set(PACKAGE_NAME ${PROJECT_NAME})
+string(TOUPPER ${PACKAGE_NAME} PACKAGE_UPPER_NAME)
+
+configure_file(cmake/PackageConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/${PACKAGE_UPPER_NAME}Config.cmake @ONLY)
+
+if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/inst_tmp/ DESTINATION ${INSTALL_LIB_DIR})
+
+    # Install the <Package>Config.cmake
+    install(FILES
+        ${PROJECT_BINARY_DIR}/${PACKAGE_UPPER_NAME}Config.cmake
+        DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
 endif()
 
 # Archiving ====================================================================

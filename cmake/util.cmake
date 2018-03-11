@@ -1,5 +1,5 @@
 ################################################################################
-# Project:  CMake4GDAL
+# Project:  Python package generator
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
