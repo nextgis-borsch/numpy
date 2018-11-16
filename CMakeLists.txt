@@ -160,35 +160,23 @@ if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME})
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME})
 endif()
 
-include(FindAnyProject)
-find_anyproject(OpenBLAS REQUIRED)
-
 # config setupext.py
-set(OPENBLAS_LIBRARY_DIR)
-if(OSX_FRAMEWORK)
-    macro(get_lib_path_from_include PATH)
-        get_filename_component(FW_DIR ${PATH} PATH)
-        get_filename_component(OPENBLAS_LIBRARY_DIR ${FW_DIR} PATH)
-    endmacro()
+if(WIN32)
+    set(OPENBLAS_LIBRARY_DIR)
 
-    set(OPENBLAS_FRAMEWORK openblas)
-    get_lib_path_from_include(${OPENBLAS_INCLUDE_DIRS})
-    set(OPENBLAS_FRAMEWORK_DIRS ${OPENBLAS_LIBRARY_DIR})
-    set(OPENBLAS_LIBRARY_DIR ${OPENBLAS_LIBRARY_DIR}/openblas.framework)
+    include(FindAnyProject)
+    find_anyproject(OpenBLAS REQUIRED)
 
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${OPENBLAS_LIBRARY_DIR}/openblas ${OPENBLAS_LIBRARY_DIR}/libopenblas.so)
-    execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink ${OPENBLAS_LIBRARY_DIR}/openblas ${OPENBLAS_LIBRARY_DIR}/libblas.so)
-elseif(WIN32)
     macro(get_lib_path_from_include PATH)
         get_filename_component(FW_DIR ${PATH} PATH)
         set(OPENBLAS_LIBRARY_DIR "${FW_DIR}/lib")
     endmacro()
     get_lib_path_from_include(${OPENBLAS_INCLUDE_DIRS})
+    list(REMOVE_DUPLICATES OPENBLAS_INCLUDE_DIRS)
+    configure_file(${CMAKE_SOURCE_DIR}/cmake/site.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}/site.cfg IMMEDIATE @ONLY)
 endif()
 
-list(REMOVE_DUPLICATES OPENBLAS_INCLUDE_DIRS)
-
-configure_file(${CMAKE_SOURCE_DIR}/cmake/site.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}/site.cfg IMMEDIATE @ONLY)
+# set(EXTRA_LINK_ARGS "-mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
 
 macro(build_py ver)
     status_message("Configuring ...")
