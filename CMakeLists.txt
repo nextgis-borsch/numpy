@@ -26,7 +26,7 @@
 
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
-project(numpy CXX C ASM Fortran)
+project(numpy)
 
 if(NOT DEFINED PACKAGE_VENDOR)
     set(PACKAGE_VENDOR NextGIS)
@@ -168,26 +168,13 @@ if(WIN32)
         set(MKL_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
         set(LAPACK_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
         # set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelemw)
-        # set(FLAGS "${FLAGS} PATH=$ENV{PATH};${BASE_INTEL_PATH}\\bin\\intel64")
     else()
         set(MKL_LIBRARY_DIRS "${BASE_INTEL_PATH}\\mkl\\lib\\ia32;${BASE_INTEL_PATH}\\compiler\\lib\\ia32")
         set(MKL_INCLUDE_DIRS "${BASE_INTEL_PATH}\\mkl\\include")
         set(MKL_LIBS "mkl_lapack95,mkl_blas95,mkl_intel_c,mkl_intel_thread,mkl_core,libiomp5md")
         set(LAPACK_LIBS "mkl_lapack95,mkl_blas95,mkl_intel_c,mkl_intel_thread,mkl_core,libiomp5md")
         # set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelw)
-        # set(FLAGS "${FLAGS} PATH=$ENV{PATH};${BASE_INTEL_PATH}\\bin\\intel64_ia32")
     endif()
-    # set(OPENBLAS_LIBRARY_DIR)
-    #
-    # include(FindAnyProject)
-    # find_anyproject(OpenBLAS REQUIRED)
-    #
-    # macro(get_lib_path_from_include PATH)
-    #     get_filename_component(FW_DIR ${PATH} PATH)
-    #     set(OPENBLAS_LIBRARY_DIR "${FW_DIR}/lib")
-    # endmacro()
-    # get_lib_path_from_include(${OPENBLAS_INCLUDE_DIRS})
-    # list(REMOVE_DUPLICATES OPENBLAS_INCLUDE_DIRS)
 
     configure_file(${CMAKE_SOURCE_DIR}/cmake/site.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}/site.cfg IMMEDIATE @ONLY)
 endif()
