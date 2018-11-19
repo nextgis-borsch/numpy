@@ -1,14 +1,5 @@
-[default]
-library_dirs=@OPENBLAS_LIBRARY_DIR@
-include_dirs=@OPENBLAS_INCLUDE_DIRS@
-extra_link_args=@EXTRA_LINK_ARGS@
-
-[openblas]
-openblas_libs = openblas
-
-[lapack]
-lapack_libs = openblas
-
-[atlas]
-atlas_libs = openblas
-libraries = openblas
+[mkl]
+library_dirs = @MKL_LIBRARY_DIRS@
+include_dirs = @MKL_INCLUDE_DIRS@
+mkl_libs = @MKL_LIBS@
+lapack_libs = @LAPACK_LIBS@

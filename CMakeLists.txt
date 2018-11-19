@@ -26,7 +26,7 @@
 
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
-project(numpy)
+project(numpy CXX C Fortran)
 
 if(NOT DEFINED PACKAGE_VENDOR)
     set(PACKAGE_VENDOR NextGIS)
@@ -160,19 +160,33 @@ if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME})
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${CMAKE_CURRENT_BINARY_DIR}/${OUT_NAME})
 endif()
 
-# config setupext.py
 if(WIN32)
-    set(OPENBLAS_LIBRARY_DIR)
+    set(BASE_INTEL_PATH "C:\\Program Files (x86)\\IntelSWTools\\compilers_and_libraries\\windows")
+    if(NOT "${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
+        set(MKL_LIBRARY_DIRS "${BASE_INTEL_PATH}\\mkl\\lib\\intel64;${BASE_INTEL_PATH}\\compiler\\lib\\intel64")
+        set(MKL_INCLUDE_DIRS "${BASE_INTEL_PATH}\\mkl\\include")
+        set(MKL_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
+        set(LAPACK_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
+        set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelemw)
+    else()
+        set(MKL_LIBRARY_DIRS "${BASE_INTEL_PATH}\\mkl\\lib\\ia32;${BASE_INTEL_PATH}\\compiler\\lib\\ia32")
+        set(MKL_INCLUDE_DIRS "${BASE_INTEL_PATH}\\mkl\\include")
+        set(MKL_LIBS "mkl_lapack95,mkl_blas95,mkl_intel_c,mkl_intel_thread,mkl_core,libiomp5md")
+        set(LAPACK_LIBS "mkl_lapack95,mkl_blas95,mkl_intel_c,mkl_intel_thread,mkl_core,libiomp5md")
+        set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelw)
+    endif()
+    # set(OPENBLAS_LIBRARY_DIR)
+    #
+    # include(FindAnyProject)
+    # find_anyproject(OpenBLAS REQUIRED)
+    #
+    # macro(get_lib_path_from_include PATH)
+    #     get_filename_component(FW_DIR ${PATH} PATH)
+    #     set(OPENBLAS_LIBRARY_DIR "${FW_DIR}/lib")
+    # endmacro()
+    # get_lib_path_from_include(${OPENBLAS_INCLUDE_DIRS})
+    # list(REMOVE_DUPLICATES OPENBLAS_INCLUDE_DIRS)
 
-    include(FindAnyProject)
-    find_anyproject(OpenBLAS REQUIRED)
-
-    macro(get_lib_path_from_include PATH)
-        get_filename_component(FW_DIR ${PATH} PATH)
-        set(OPENBLAS_LIBRARY_DIR "${FW_DIR}/lib")
-    endmacro()
-    get_lib_path_from_include(${OPENBLAS_INCLUDE_DIRS})
-    list(REMOVE_DUPLICATES OPENBLAS_INCLUDE_DIRS)
     configure_file(${CMAKE_SOURCE_DIR}/cmake/site.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}/site.cfg IMMEDIATE @ONLY)
 endif()
 
