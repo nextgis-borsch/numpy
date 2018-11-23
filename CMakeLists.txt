@@ -168,12 +168,14 @@ if(WIN32)
         set(MKL_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
         set(LAPACK_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
         # set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelemw)
+        set(IOMP_LIB $ENV{INTEL_DEV_REDIST}\\redist\\intel64\\compiler\\libiomp5md.dll)
     else()
         set(MKL_LIBRARY_DIRS "${BASE_INTEL_PATH}\\mkl\\lib\\ia32;${BASE_INTEL_PATH}\\compiler\\lib\\ia32")
         set(MKL_INCLUDE_DIRS "${BASE_INTEL_PATH}\\mkl\\include")
         set(MKL_LIBS "mkl_lapack95,mkl_blas95,mkl_intel_c,mkl_intel_thread,mkl_core,libiomp5md")
         set(LAPACK_LIBS "mkl_lapack95,mkl_blas95,mkl_intel_c,mkl_intel_thread,mkl_core,libiomp5md")
         # set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelw)
+        set(IOMP_LIB $ENV{INTEL_DEV_REDIST}\\redist\\ia32\\compiler\\libiomp5md.dll)
     endif()
 
     configure_file(${CMAKE_SOURCE_DIR}/cmake/site.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}/site.cfg IMMEDIATE @ONLY)
@@ -264,6 +266,7 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
     install(FILES
         ${PROJECT_BINARY_DIR}/${PACKAGE_UPPER_NAME}Config.cmake
         DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
+    install(FILES ${IOMP_LIB} DESTINATION ${INSTALL_LIB_DIR})
 endif()
 
 # Archiving ====================================================================
