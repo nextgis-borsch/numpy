@@ -171,6 +171,7 @@ if(WIN32)
         # set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelemw)
         set(IOMP_LIB "$ENV{INTEL_DEV_REDIST}redist\\intel64\\compiler\\libiomp5md.dll")
         set(MMD_LIB "$ENV{INTEL_DEV_REDIST}redist\\intel64\\compiler\\libmmd.dll")
+        set(COREMD_LIB "$ENV{INTEL_DEV_REDIST}redist\\intel64\\compiler\\libifcoremd.dll")
     else()
         set(MKL_LIBRARY_DIRS "${BASE_INTEL_PATH}\\mkl\\lib\\ia32;${BASE_INTEL_PATH}\\compiler\\lib\\ia32")
         set(MKL_INCLUDE_DIRS "${BASE_INTEL_PATH}\\mkl\\include")
@@ -179,6 +180,7 @@ if(WIN32)
         # set(BUILD_INCLUDES ${BUILD_INCLUDES} --compiler=intelw)
         set(IOMP_LIB "$ENV{INTEL_DEV_REDIST}redist\\ia32\\compiler\\libiomp5md.dll")
         set(MMD_LIB "$ENV{INTEL_DEV_REDIST}redist\\ia32\\compiler\\libmmd.dll")
+        set(COREMD_LIB "$ENV{INTEL_DEV_REDIST}redist\\ia32\\compiler\\libifcoremd.dll")
     endif()
 
     string(REPLACE "\\" "\\\\" IOMP_LIB ${IOMP_LIB})
@@ -272,7 +274,7 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
     install(FILES
         ${PROJECT_BINARY_DIR}/${PACKAGE_UPPER_NAME}Config.cmake
         DESTINATION ${INSTALL_CMAKECONF_DIR} COMPONENT dev)
-    install(FILES ${IOMP_LIB} ${MMD_LIB} DESTINATION ${INSTALL_LIB_DIR})
+    install(FILES ${IOMP_LIB} ${MMD_LIB} ${COREMD_LIB} DESTINATION ${INSTALL_LIB_DIR})
 endif()
 
 # Archiving ====================================================================
