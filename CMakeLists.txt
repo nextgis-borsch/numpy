@@ -185,6 +185,7 @@ if(WIN32)
 
     string(REPLACE "\\" "\\\\" IOMP_LIB ${IOMP_LIB})
     string(REPLACE "\\" "\\\\" MMD_LIB ${MMD_LIB})
+    string(REPLACE "\\" "\\\\" COREMD_LIB ${COREMD_LIB})
 
     configure_file(${CMAKE_SOURCE_DIR}/cmake/site.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/${OUT_DIR_NAME}/site.cfg IMMEDIATE @ONLY)
 endif()
