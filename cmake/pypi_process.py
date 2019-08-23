@@ -11,7 +11,10 @@ download_url = ''
 with open(sys.argv[1]) as data_file:
     data = json.load(data_file)
 
-    version = data['info']['version']
+    if len(sys.argv) > 3:
+        version = sys.argv[3]
+    else: 
+        version = data['info']['version']
     name = data['info']['name']
     for i in data['releases'][version]:
         if i['url'].endswith('tar.gz') or i['url'].endswith('zip'):
