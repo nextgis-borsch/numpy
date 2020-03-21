@@ -55,7 +55,7 @@ if(NOT WITH_PYTHON2 AND NOT WITH_PYTHON3)
 endif()
 
 if(WITH_PYTHON2)
-    set(LAST_AVAILABLE_VERSION 1.16.4)
+    set(LAST_AVAILABLE_VERSION 1.16.6)
     find_package(PythonInterp 2)
     if(PYTHONINTERP_FOUND)
         set(PYTHON2_EXECUTABLE ${PYTHON_EXECUTABLE})
@@ -72,7 +72,7 @@ unset(PYTHON_VERSION_MAJOR)
 unset(PYTHON_VERSION_MINOR)
 
 if(WITH_PYTHON3)
-    # Hack, not find python3 withouut this
+    # Hack, not find python3 without this
     find_program(PYTHON3_EXECUTABLE python3)
     set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
 
