@@ -31,4 +31,4 @@ with open(sys.argv[1]) as data_file:
     version_file.write("{}\n{}\n{}".format(version, date, pack_name))
     version_file.close()
 
-print download_url + ';' + version + ';' + pack_name
+print(download_url + ';' + version + ';' + pack_name)
