@@ -72,7 +72,7 @@ unset(PYTHON_VERSION_MAJOR)
 unset(PYTHON_VERSION_MINOR)
 
 if(WITH_PYTHON3)
-    find_package(Python3 COMPONENTS Interpreter)
+    find_package(Python3 3.8 COMPONENTS Interpreter)
     if(Python3_FOUND)
         set(PYTHON3_EXECUTABLE ${Python3_EXECUTABLE})
         set(PYTHON3_VERSION_MAJOR ${Python3_VERSION_MAJOR})
