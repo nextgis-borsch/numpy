@@ -160,7 +160,7 @@ endif()
 if(WIN32)
     set(BASE_INTEL_PATH "C:\\Program Files (x86)\\IntelSWTools\\compilers_and_libraries\\windows")
 
-    if("${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)")
+    if("${CMAKE_GENERATOR}" MATCHES "(Win64|IA64)" OR "${CMAKE_GENERATOR_PLATFORM}" MATCHES "x64")
         set(MKL_LIBRARY_DIRS "${BASE_INTEL_PATH}\\mkl\\lib\\intel64;${BASE_INTEL_PATH}\\compiler\\lib\\intel64")
         set(MKL_INCLUDE_DIRS "${BASE_INTEL_PATH}\\mkl\\include")
         set(MKL_LIBS "mkl_lapack95_lp64,mkl_blas95_lp64,mkl_intel_lp64,mkl_intel_thread,mkl_core,libiomp5md")
